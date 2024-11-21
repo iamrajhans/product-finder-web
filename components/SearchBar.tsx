@@ -1,15 +1,40 @@
 "use client";
 import { useState } from "react";
 import { Search, Upload, TrendingUp, Filter } from "lucide-react";
+import { useRouter } from "next/compat/router";
 
 const SearchBar: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [image, setImage] = useState<File | null>(null);
+  const router = useRouter();
 
-  const handleSearch = (): void => {
-    console.log("Search query:", query);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  const handleSearch = async (): Promise<void> => {
+    if (query) {
+      // Perform text search
+      const response = await fetch(`/api/search?query=${query}`);
+      const products = await response.json();
+      router.push(`/search?query=${query}`);
+      console.log("Text search results:", products);
+    }
+
     if (image) {
-      console.log("Uploaded image:", image);
+      // Perform image search
+      const formData = new FormData();
+      formData.append("file", image);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      console.log("Image search results:", result);
     }
   };
 
@@ -41,6 +66,7 @@ const SearchBar: React.FC = () => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Search for products..."
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
